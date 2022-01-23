@@ -95,7 +95,10 @@ func messageClient(client *websocket.Conn, msg Chat) {
 }
 
 func messageClients(msg Chat) {
-	for client := range clients {
+	for client, ok := range clients {
+		if ok == false {
+			continue
+		}
 		messageClient(client, msg)
 	}
 }
@@ -127,8 +130,11 @@ func save(msg Chat) {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	redisAddr := os.Getenv("REDIS_URL")
-	
 	rdb = redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 		Password: "",
@@ -137,10 +143,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("./public")))
 	http.HandleFunc("/websocket", handleConnections)
 	go handleMessages()
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+
 	port := os.Getenv("PORT")
 
 	log.Print("Server starting on port: "+port)
